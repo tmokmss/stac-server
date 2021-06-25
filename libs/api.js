@@ -300,15 +300,23 @@ const buildPageLinks = function (meta, parameters, endpoint, httpMethod) {
   const dictToURI = (dict) => (
     Object.keys(dict).map(
       (p) => {
-        if (p === "collections") {
-          return `${encodeURIComponent(p)}[]=${encodeURIComponent(dict[p])}`
+        //TODO: how did this work without JSON.stringify?
+        // const query = encodeURIComponent(dict[p])
+        let value = dict[p]
+        if (typeof value === 'object' && value !== null) {
+          value = JSON.stringify(value)
+        }
+        const query = encodeURIComponent(value)
+        if (p === 'collections') {
+          return `${encodeURIComponent(p)}[]=${query}`
         } else {
-          return `${encodeURIComponent(p)}=${encodeURIComponent(dict[p])}`
+          return `${encodeURIComponent(p)}=${query}`
         }
     }).join('&')
   )
   const { matched, page, limit } = meta
-  let newParams, link
+  let newParams
+  let link
   if ((page * limit) < matched) {
     newParams = Object.assign({}, parameters, { page: page + 1, limit })
     link = {
@@ -320,8 +328,8 @@ const buildPageLinks = function (meta, parameters, endpoint, httpMethod) {
       const nextQueryParameters = dictToURI(newParams)
       link.href = `${endpoint}?${nextQueryParameters}`
     } else if (httpMethod === 'POST') {
-      link.href = endpoint,
-      link.merge = false,
+      link.href = endpoint
+      link.merge = false
       link.body = newParams
     }
     pageLinks.push(link)
@@ -338,11 +346,12 @@ const buildPageLinks = function (meta, parameters, endpoint, httpMethod) {
       link.href = `${endpoint}?${prevQueryParameters}`
     } else if (httpMethod === 'POST') {
       link.href = endpoint
-      link.merge = false,
+      link.merge = false
       link.body = newParams
     }
     pageLinks.push(link)
   }
+
   return pageLinks
 }
 
@@ -355,9 +364,10 @@ const searchItems = async function (collectionId, queryParameters, backend, endp
   } = queryParameters
   const bbox = extractBbox(queryParameters)
   const hasIntersects = extractIntersects(queryParameters)
-  if (bbox && hasIntersects) {
-    throw new Error('Expected bbox OR intersects, not both')
-  }
+  // TODO: Figure out, why is this not allowed?
+  // if (bbox && hasIntersects) {
+  //   throw new Error('Expected bbox OR intersects, not both')
+  // }
   const sortby = extractSortby(queryParameters)
   // Prefer intersects
   const intersects = hasIntersects || bbox
@@ -390,12 +400,11 @@ const searchItems = async function (collectionId, queryParameters, backend, endp
     new_endpoint = `${endpoint}/collections/${collectionId}/items`
   }
   logger.debug(`Search parameters: ${JSON.stringify(searchParameters)}`)
-  const { 'results': itemsResults, 'context': itemsMeta } =
-    await backend.search(searchParameters, page, limit)
+  const results = await backend.search(searchParameters, page, limit)
+  const { 'results': itemsResults, 'context': itemsMeta } = results
   const pageLinks = buildPageLinks(itemsMeta, searchParameters, new_endpoint, httpMethod)
   const items = addItemLinks(itemsResults, endpoint)
   const response = wrapResponseInFeatureCollection(itemsMeta, items, pageLinks)
-
   return response
 }
 
@@ -409,6 +418,8 @@ const getAPI = async function () {
 const getConformance = async function () {
   const conformance = {
     conformsTo: [
+      'https://api.stacspec.org/v1.0.0/core',
+      'https://api.stacspec.org/v1.0.0/item-search',
       'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core',
       'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/html',
       'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson'
@@ -420,7 +431,7 @@ const getConformance = async function () {
 
 const getCatalog = async function (backend, endpoint = '') {
   const collections = await backend.getCollections(1, COLLECTION_LIMIT)
-  const catalog = collectionsToCatalogLinks(collections, endpoint)
+  let catalog = collectionsToCatalogLinks(collections, endpoint)
   catalog.links.push({
     rel: 'service-desc',
     type: 'application/vnd.oai.openapi+json;version=3.0',
@@ -432,7 +443,7 @@ const getCatalog = async function (backend, endpoint = '') {
     href: `${endpoint}/conformance`
   })
   catalog.links.push({
-    rel: 'children',
+    rel: 'data',
     type: 'application/json',
     href: `${endpoint}/collections`
   })
@@ -443,7 +454,7 @@ const getCatalog = async function (backend, endpoint = '') {
   })
   catalog.links.push({
     rel: 'search',
-    type: 'application/json',
+    type: 'application/geo+json',
     href: `${endpoint}/search`
   })
   const docsUrl = process.env.STAC_DOCS_URL || 'https://stac-utils.github.io/stac-api'
@@ -453,6 +464,7 @@ const getCatalog = async function (backend, endpoint = '') {
       href: process.env.STAC_DOCS_URL
     })
   }
+  catalog = Object.assign(catalog, await getConformance())
   return catalog
 }
 
@@ -460,9 +472,17 @@ const getCatalog = async function (backend, endpoint = '') {
 const getCollections = async function (backend, endpoint = '') {
   const results = await backend.getCollections(1, COLLECTION_LIMIT)
   const linkedCollections = addCollectionLinks(results, endpoint)
+
+  // TODO: Attention, this is a SHIM. Implement proper pagination!
   const resp = {
     collections: results,
-    links: []
+    links: [],
+    context: {
+      page: 1,
+      limit: COLLECTION_LIMIT,
+      matched: linkedCollections && linkedCollections.length,
+      returned: linkedCollections && linkedCollections.length
+    }
   }
   return resp
 }
@@ -502,9 +522,18 @@ const editPartialItem = async function (itemId, queryParameters, backend, endpoi
 const API = async function (
   inpath = '', queryParameters = {}, backend, endpoint = '', httpMethod = 'GET'
 ) {
-  logger.debug(`API Path: ${inpath}, Query Parameters: ${queryParameters}`)
+  logger.debug(`API Path: ${inpath}, Query Parameters: ${JSON.stringify(queryParameters)}`)
   let apiResponse
   try {
+    if (httpMethod === 'GET') {
+      // Lets attempt to HTML entity decode values if they have been passed from GET
+      Object.keys(queryParameters).forEach((key) => {
+        if (queryParameters[key][0] === '%') {
+          queryParameters[key] = decodeURIComponent(queryParameters[key])
+        }
+      })
+    }
+
     const pathElements = parsePath(inpath)
 
     const {

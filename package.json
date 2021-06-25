@@ -1,21 +1,23 @@
 {
   "displayName": "stac-server",
   "description": "A STAC API running on stac-server",
-  "version": "0.2.0",
+  "version": "0.3.0-dev",
   "repository": "https://github.com/stac-utils/stac-server",
   "author": "Alireza Jazayeri, Matthew Hanson <matt.a.hanson@gmail.com>, Sean Harkins",
   "license": "MIT",
   "scripts": {
     "postinstall": "cd lambdas/api; npm install; cd ../ingest; npm install; cd ../failed-ingest; npm install",
     "build": "cd lambdas/api; npm run build; cd ../ingest; npm run build; cd ../failed-ingest; npm run build",
-    "test": "ava",
+    "test": "ava tests/*.js",
+    "test_integrations": "ava ./tests/integration/test_*.js",
     "eslint": "eslint packages/* --ext .js",
     "deploy": "sls deploy",
     "build-api-docs": "npm run widdershins --search false --language_tabs 'nodejs:NodeJS' 'python:Python' --summary ./packages/api-lib/api-spec.yaml -o ./docs/api.md & npm run shins --inline --logo ./docs/images/logo.png -o ./docs/index.html ./docs/api.md"
   },
   "ava": {
     "files": [
-      "tests/*.js"
+      "tests/*.js",
+      "tests/integration/test_*.js"
     ],
     "verbose": true,
     "serial": true
@@ -28,7 +30,7 @@
   },
   "dependencies": {
     "@acuris/aws-es-connection": "^1.1.0",
-    "@elastic/elasticsearch": "^6.8",
+    "@elastic/elasticsearch": "^7.9",
     "@mapbox/extent": "^0.4.0",
     "geojson-validation": "^0.2.1",
     "js-yaml": "^3.13.1",

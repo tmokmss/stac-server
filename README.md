@@ -8,12 +8,13 @@ Stac-server is a STAC compliant Rest API for searching and serving metadata for 
 | -------- | ---------- |
 | 0.1.x    | 0.9.x      |
 | 0.2.x    | <1.0.0-rc.1 |
+| 0.3.x    | 1.0.0 |
 
 The following APIs are deployed instances of stac-server:
 
 | Name     | Version   | Description |
 | -------- | ----      | ----        |
-| [Earth Search](https://earth-search-v0.aws.element84.com/) | 0.9.0 | Catalog of some AWS Public Datasets |
+| [Earth Search](https://earth-search.aws.element84.com/v0/) | 1.0.0-beta.2 | Catalog of some AWS Public Datasets |
 
 
 ## Usage
@@ -40,8 +41,8 @@ There are some settings that should be reviewed and updated as needeed in the [s
 
 | Name | Description | Default Value |
 | ---- | ----------- | ------------- |
-| STAC_VERSION | STAC Version of this STAC API | 1.0.0-beta.2 |
-| STAC_API_VERSION | STAC API Version of this STAC API | 0.9.0 |
+| STAC_VERSION | STAC Version of this STAC API | 1.0.0 |
+| STAC_API_VERSION | STAC API Version of this STAC API | 1.0.0-beta.1 |
 | STAC_ID | ID of this catalog | stac-server |
 | STAC_TITLE | Title of this catalog | STAC API |
 | STAC_DESCRIPTION | Description of this catalog | A STAC API |
@@ -85,13 +86,14 @@ STAC Collections should be ingested before Items that belong to that Collection.
 
 Stac-server can also be subscribed to SNS Topics that publish complete STAC Items as their message. This provides a way to keep stac-server up to date with new data. Use the AWS Lambda console for the function `stac-server-<stage>-subscibe-to-sns` to subscribe to an SNS Topic for which you have the full ARN and permission to subscribe to. This could be an SNS Topic you created yourself to publish STAC records to, or a publicly available one, such as for [Sentinel](https://github.com/sat-utils/sat-stac-sentinel).
 
+*Note*, that adding the subscription via the topic page does not seem to work. Instead, add a trigger on Lambda edit page.
+
 ### Ingest Errors
 
-Errors that occur during ingest will end up in the dead letter processing queue, where they are processed by the `stac-server-<stage>-failed-ingest` Lambda function. Currently all the failed-ingest Lambda does is log the error, see the CloudWatch log '/aws/lambda/stac-server-<stage>-failed-ingest' for errors.
+Errors that occur during ingest will end up in the dead letter processing queue, where they are processed by the `stac-server-<stage>-failed-ingest` Lambda function. Currently all the failed-ingest Lambda does is log the error, see the CloudWatch log `/aws/lambda/stac-server-<stage>-failed-ingest` for errors.
 
 ## Development
 
-The latest released version is on the [master branch](https://github.com/stac-utils/stac-server/tree/master), and the latest development version is on the [develop](https://github.com/stac-utils/stac-server/tree/develop) branch.
 
 ```
 # Install dependencies in package.json
