@@ -149,10 +149,8 @@ const extractCollectionIds = function (params) {
   const { collections } = params
   if (collections) {
     if (typeof collections === 'string') {
-      console.log(`Collections: ${collections}`)
       idsRules = JSON.parse(collections)
     } else {
-      console.log(`Collections slice: ${collections}`)
       idsRules = collections.slice()
     }
   }
