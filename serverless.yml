@@ -124,11 +124,7 @@ resources:
           VolumeType: gp2
           VolumeSize: 100
         ElasticsearchClusterConfig:
-<<<<<<< HEAD
           InstanceType: r5.large.elasticsearch
-=======
-          InstanceType: t3.small.elasticsearch
->>>>>>> main
           InstanceCount: 3
           DedicatedMasterEnabled: false
           ZoneAwarenessEnabled: false

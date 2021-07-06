@@ -149,8 +149,10 @@ const extractCollectionIds = function (params) {
   const { collections } = params
   if (collections) {
     if (typeof collections === 'string') {
+      console.log(`Collections: ${collections}`)
       idsRules = JSON.parse(collections)
     } else {
+      console.log(`Collections slice: ${collections}`)
       idsRules = collections.slice()
     }
   }
@@ -300,7 +302,6 @@ const buildPageLinks = function (meta, parameters, endpoint, httpMethod) {
   const dictToURI = (dict) => (
     Object.keys(dict).map(
       (p) => {
-        //TODO: how did this work without JSON.stringify?
         // const query = encodeURIComponent(dict[p])
         let value = dict[p]
         if (typeof value === 'object' && value !== null) {
