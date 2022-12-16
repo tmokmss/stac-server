@@ -1,0 +1,16 @@
+{
+  "ignore": {
+    "@acuris/aws-es-connection": {
+      "versions": "2.3.0",
+      "reason": "deprecated behavior, don't want to test"
+    },
+    "@elastic/elasticsearch": {
+      "versions": "8.5.0",
+      "reason": "deprecated behavior, don't want to test"
+    },
+    "@types/node": {
+      "versions": "^18",
+      "reason": "using 16"
+    }
+  }
+}
