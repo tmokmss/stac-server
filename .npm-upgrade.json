@@ -4,14 +4,6 @@
       "versions": "20",
       "reason": ""
     },
-    "typescript": {
-      "versions": "5.2.2",
-      "reason": "conflict with other dependency"
-    },
-    "got": {
-      "versions": "14.0.0",
-      "reason": ""
-    },
     "ava": {
       "versions": "6",
       "reason": "breaks test running"
