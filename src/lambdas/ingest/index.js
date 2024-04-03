@@ -5,7 +5,8 @@ import { ingestItems, publishResultsToSns } from '../../lib/ingest.js'
 import getObjectJson from '../../lib/s3-utils.js'
 import logger from '../../lib/logger.js'
 
-const isSqsEvent = (event) => 'Records' in event
+const isSqsEvent = (event) => 'Records' in event && event.Records[0]?.eventSource === 'aws:sqs'
+const isS3Event = (event) => 'Records' in event && event.Records[0]?.eventSource === 'aws:s3'
 
 const isSnsMessage = (record) => record.Type === 'Notification'
 
@@ -48,6 +49,23 @@ const stacItemsFromSqsEvent = async (event) => {
   )
 }
 
+const stacItemFromS3Record = async (record) => {
+  const bucket = record.s3.bucket.name
+  const key = record.s3.object.key
+  return await getObjectJson({
+    bucket,
+    key
+  })
+}
+
+const stacItemsFromS3Event = async (event) => {
+  const records = event.Records
+
+  return await Promise.all(
+    records.map((r) => stacItemFromS3Record(r))
+  )
+}
+
 export const handler = async (event, _context) => {
   logger.debug('Event: %j', event)
 
@@ -56,9 +74,14 @@ export const handler = async (event, _context) => {
     return
   }
 
-  const stacItems = isSqsEvent(event)
-    ? await stacItemsFromSqsEvent(event)
-    : [event]
+  let stacItems
+  if (isSqsEvent(event)) {
+    stacItems = await stacItemsFromSqsEvent(event)
+  } else if (isS3Event(event)) {
+    stacItems = await stacItemsFromS3Event(event)
+  } else {
+    stacItems = [event]
+  }
 
   try {
     logger.debug('Attempting to ingest %d items', stacItems.length)
