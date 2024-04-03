@@ -1285,6 +1285,36 @@ const getItemThumbnail = async function (collectionId, itemId, backend) {
   return { location }
 }
 
+const patchItemWithPresignedUrlToAsset = async function (item) {
+  const newItem = JSON.parse(JSON.stringify(item))
+  console.log(newItem)
+  if ('assets' in newItem) {
+    await Promise.all(Object.values(newItem.assets).map(async (asset) => {
+      if (asset.href && asset.href.startsWith('s3://')) {
+        // "s3://bucketname/key/to/some/file",
+        const region = item.properties['storage:region']
+                      || process.env['AWS_REGION']
+                      || 'us-west-2'
+
+        const withoutProtocol = asset.href.substring(5) // chop off s3://
+        const [bucket, ...keyArray] = withoutProtocol.split('/')
+        const key = keyArray.join('/')
+
+        const client = new S3Client({ region })
+        const command = new GetObjectCommand({
+          Bucket: bucket,
+          Key: key,
+          RequestPayer: 'requester'
+        })
+        asset.href = await getSignedUrl(client, command, {
+          expiresIn: 60 * 5, // expiry in seconds
+        })
+      }
+    }))
+  }
+  return newItem
+}
+
 const healthCheck = async function (backend) {
   const response = await backend.healthCheck()
   if (response && response.statusCode === 200) {
@@ -1314,6 +1344,7 @@ export default {
   extractDatetime,
   aggregate,
   getItemThumbnail,
+  patchItemWithPresignedUrlToAsset,
   healthCheck,
   getGlobalQueryables,
   getCollectionQueryables,

@@ -314,8 +314,9 @@ app.get('/collections/:collectionId/items/:itemId', async (req, res, next) => {
         next(createError(500))
       }
     } else {
+      const item = await api.patchItemWithPresignedUrlToAsset(response)
       res.type('application/geo+json')
-      res.json(response)
+      res.json(item)
     }
   } catch (error) {
     next(error)
