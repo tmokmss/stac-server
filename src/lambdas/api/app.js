@@ -252,6 +252,9 @@ app.get('/collections/:collectionId/items', async (req, res, next) => {
         req.endpoint,
         'GET'
       )
+      items.features = await Promise.all(
+        items.features.map((feature) => api.patchItemWithPresignedUrlToAsset(feature))
+      )
       res.type('application/geo+json')
       res.json(items)
     }
