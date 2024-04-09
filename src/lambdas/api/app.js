@@ -252,9 +252,6 @@ app.get('/collections/:collectionId/items', async (req, res, next) => {
         req.endpoint,
         'GET'
       )
-      items.features = await Promise.all(
-        items.features.map((feature) => api.patchItemWithPresignedUrlToAsset(feature))
-      )
       res.type('application/geo+json')
       res.json(items)
     }
@@ -317,9 +314,8 @@ app.get('/collections/:collectionId/items/:itemId', async (req, res, next) => {
         next(createError(500))
       }
     } else {
-      const item = await api.patchItemWithPresignedUrlToAsset(response)
       res.type('application/geo+json')
-      res.json(item)
+      res.json(response)
     }
   } catch (error) {
     next(error)
