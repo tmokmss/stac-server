@@ -584,7 +584,6 @@ const buildPaginationLinks = function (limit, parameters, bbox, intersects, endp
 
 const patchItemWithPresignedUrlToAsset = async function (item) {
   const newItem = JSON.parse(JSON.stringify(item))
-  console.log(newItem)
   if ('assets' in newItem) {
     await Promise.all(Object.values(newItem.assets).map(async (asset) => {
       if (asset.href && asset.href.startsWith('s3://')) {
